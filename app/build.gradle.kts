@@ -85,7 +85,7 @@ android {
 	namespace = BuildConfig.PACKAGE_NAME
 
 	defaultConfig {
-		applicationId = BuildConfig.PACKAGE_NAME
+		applicationId = BuildConfig.APPLICATION_ID
 		vectorDrawables.useSupportLibrary = true
 		testInstrumentationRunnerArguments["class"] = "com.itsaky.androidide.OrderedTestSuite"
 	}
