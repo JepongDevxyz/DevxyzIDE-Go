@@ -5,7 +5,7 @@
 	<string name="copy" tools:override="true">Copy</string>
 	<string name="terminal_more">More…</string>
 	<string name="text_to_search">Text to find</string>
-	<string name="app_name" translatable="false">Code on the Go</string>
+	<string name="app_name" translatable="false">DevxyzIDE Go</string>
 	<string name="about_option_email">Email</string>
 	<string name="about_option_website">Website</string>
 	<string name="about_option_youtube">YouTube</string>
@@ -365,7 +365,7 @@
 
 	<!-- Preferences -->
 	<string name="title_change_text_size">Editor font size</string>
-	<string name="idepref_about_title">About Code on the Go</string>
+	<string name="idepref_about_title">About DevxyzIDE Go</string>
 	<string name="idepref_build_clearCache_title">Clear Gradle caches</string>
 	<string name="idepref_build_clearCache_summary">Clear Gradle caches directory. This will delete all dependencies downloaded by Gradle. Required files will be downloaded again in next build.</string>
 	<string name="idepref_build_customgradlecommands_title">Additional Gradle flags</string>
