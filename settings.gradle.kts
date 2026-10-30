@@ -95,7 +95,7 @@ if (FDroidConfig.hasRead && FDroidConfig.isFDroidBuild) {
 	}
 }
 
-rootProject.name = "DevxyzIDE Go"
+rootProject.name = "DevxyzIDEGo"
 
 include(
 	":annotation-processors",
