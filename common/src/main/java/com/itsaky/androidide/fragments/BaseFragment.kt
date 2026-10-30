@@ -55,7 +55,7 @@ open class BaseFragment
 
 		companion object {
 			const val ANDROID_DOCS_AUTHORITY = "com.android.externalstorage.documents"
-			const val ANDROIDIDE_DOCS_AUTHORITY = "com.itsaky.androidide.documents"
+			const val ANDROIDIDE_DOCS_AUTHORITY = "com.jepongdevxyz.go.documents"
 		}
 
 		private val startForResult =

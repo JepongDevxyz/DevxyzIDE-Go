@@ -4,7 +4,9 @@
 <p align="center">
   💖 <strong>If you believe in our mission or just love our tools, please <a href="https://github.com/sponsors/appdevforall">sponsor our work</a>.</strong> 💖
 </p>
-<h2 align="center"><b>Code On The Go</b></h2>
+<h2 align="center"><b>DevxyzIDE Go</b></h2>
+<p align="center">
+ DevxyzIDE Go is based on <b>Code on the Go</b> by <a href="https://github.com/appdevforall">App Dev for All</a>, the successor to <a href="https://github.com/AndroidIDEOfficial/AndroidIDE">AndroidIDE</a> by <a href="https://github.com/itsaky">Akash Yadav (itsaky)</a>. It is distributed under the GNU General Public License v3.0 (GPL-3.0) — see the License section below. </p>
 <p align="center">
  Code on the Go is an IDE that lets you build Android apps on Android phones, without needing a traditional computer or Internet access. Code on the Go is a project of App Dev for All, a philanthropic venture focused on lowering the barriers to Android app development. </p>
 <p><br>

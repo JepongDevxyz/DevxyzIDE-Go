@@ -26,10 +26,17 @@ import org.gradle.api.JavaVersion
  */
 object BuildConfig {
 	/** The internal name for the IDE */
-	const val INTERNAL_NAME = "CodeOnTheGo"
+	const val INTERNAL_NAME = "DevxyzIDEGo"
 
-	/** AndroidIDE's package name. */
+	/** AndroidIDE's package name (internal namespace; generated R/BuildConfig live here). */
 	const val PACKAGE_NAME = "com.itsaky.androidide"
+
+	/**
+	 * The install identity (applicationId) for DevxyzIDE Go. Decoupled from
+	 * [PACKAGE_NAME]/namespace per ADR 0008: the namespace stays the original code
+	 * package so generated-class imports stay valid; only the applicationId is new.
+	 */
+	const val APPLICATION_ID = "com.jepongdevxyz.go"
 
 	/** The compile SDK version. */
 	const val COMPILE_SDK = 36
