@@ -2,8 +2,6 @@ name: Build APK
 
 on:
   push:
-    # NOTE: the DevxyzIDE-Go repo does not exist yet; this branch will be
-    # renamed to the repo's working branch on first push.
     branches: [devxyz-go-phase0]
   workflow_dispatch:
 
@@ -30,14 +28,20 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
+      # No setup-android action: the GitHub runner image already ships the
+      # Android SDK (ANDROID_HOME) with cmdline-tools, and
+      # android-actions/setup-android@v3 fails on current images because it
+      # tries to install the removed legacy "tools" package
+      # ("Failed to find package 'tools'", run 41105613543). Use the
+      # preinstalled sdkmanager directly instead.
       - name: Install SDK packages (platform 36 + NDK)
         run: |
-          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;29.0.14206865"
+          SDKMANAGER="$(command -v sdkmanager || ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          echo "Using sdkmanager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "build-tools;35.0.0" "platform-tools" "ndk;29.0.14206865"
         # NDK version = BuildConfig.NDK_VERSION; large download — cache if slow.
-        # build-tools version to confirm against AGP 8.8.2 defaults on first run.
+        # build-tools 35.0.0 is AGP 8.8.2's default; 36.0.0 kept for compileSdk 36.
 
       - name: Create google-services.json
         env:
