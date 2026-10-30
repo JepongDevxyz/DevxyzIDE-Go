@@ -57,6 +57,32 @@ jobs:
           fi
         # REQUIRED until/unless the google-services plugin is removed.
 
+      - name: Prepare signing (throwaway CI key when secrets are absent)
+        run: |
+          if [ -z "$IDE_SIGNING_KEY_BIN" ]; then
+            # The debug-signing fallback path fails in validateSigning
+            # (run 41108512821: ':app:validateSigningV8Debug' >
+            # org/bouncycastle/asn1/edec/EdECObjectIdentifiers), while the
+            # "common" config path — used whenever a real keystore is
+            # configured — is the one upstream CI always exercises.
+            # Until Jepong sets the repo's IDE_SIGNING_* secrets (her real
+            # release key), sign CI builds with a throwaway key generated
+            # fresh in this run. APKs from different runs then have
+            # different signatures and cannot update-install over each
+            # other; that is expected for smoke builds.
+            keytool -genkeypair -keystore "$RUNNER_TEMP/ci-signing.p12" -storetype PKCS12 \
+              -alias ci -storepass ci-store-pass -keypass ci-key-pass \
+              -keyalg RSA -keysize 2048 -validity 3650 \
+              -dname "CN=DevxyzIDE Go CI, O=Jepong Devxyz"
+            echo "IDE_SIGNING_KEY_BIN=$(base64 -w0 "$RUNNER_TEMP/ci-signing.p12")" >> "$GITHUB_ENV"
+            echo "IDE_SIGNING_ALIAS=ci" >> "$GITHUB_ENV"
+            echo "IDE_SIGNING_STORE_PASS=ci-store-pass" >> "$GITHUB_ENV"
+            echo "IDE_SIGNING_KEY_PASS=ci-key-pass" >> "$GITHUB_ENV"
+            echo "Signing: throwaway CI key (repo IDE_SIGNING_* secrets not set yet)."
+          else
+            echo "Signing: repo IDE_SIGNING_* secrets."
+          fi
+
       - name: Install advancecomp (advzip for recompressApk)
         run: command -v advzip || { sudo apt-get update && sudo apt-get install -y advancecomp; }
 
