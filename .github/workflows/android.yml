@@ -127,7 +127,7 @@ jobs:
           GRADLE_OPTS: "-Xmx3g"
         run: |
           set -o pipefail
-          ./gradlew :app:assetsDownloadRelease :app:assembleV8Release --no-daemon -Dorg.gradle.jvmargs="-Xmx6g" -Dkotlin.daemon.jvm.options="-Xmx3g" -Dorg.gradle.workers.max=8 -Pandroid.aapt2.daemonHeapSize=2048M -Pnext_release_version=26.44 2>&1 | tee "$RUNNER_TEMP/gradle-release.log"
+          ./gradlew :app:assetsDownloadRelease :app:assembleV8Release --no-daemon -Dorg.gradle.jvmargs="-Xmx6g" -Dkotlin.daemon.jvm.options="-Xmx3g" -Dorg.gradle.workers.max=8 -Pandroid.aapt2.daemonHeapSize=2048M -Pnext_release_version=26.44 -PdevxyzDownloadAssets=true 2>&1 | tee "$RUNNER_TEMP/gradle-release.log"
         # next_release_version is mandatory for release (YY.ww format).
         # Signed with her key when the IDE_SIGNING_* secrets are set;
         # without them the build only warns and debug-signs (smoke builds).
