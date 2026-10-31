@@ -70,14 +70,19 @@ jobs:
             # fresh in this run. APKs from different runs then have
             # different signatures and cannot update-install over each
             # other; that is expected for smoke builds.
+            # PKCS12 note: store password and key password MUST be the same
+            # (PKCS12 protects the key with the store password; keytool
+            # ignores a distinct -keypass). Run 41171289313 failed at
+            # :app:packageV8Debug with "Get Key failed: Given final block
+            # not properly padded" because they differed.
             keytool -genkeypair -keystore "$RUNNER_TEMP/ci-signing.p12" -storetype PKCS12 \
-              -alias ci -storepass ci-store-pass -keypass ci-key-pass \
+              -alias ci -storepass ci-sign-pass -keypass ci-sign-pass \
               -keyalg RSA -keysize 2048 -validity 3650 \
               -dname "CN=DevxyzIDE Go CI, O=Jepong Devxyz"
             echo "IDE_SIGNING_KEY_BIN=$(base64 -w0 "$RUNNER_TEMP/ci-signing.p12")" >> "$GITHUB_ENV"
             echo "IDE_SIGNING_ALIAS=ci" >> "$GITHUB_ENV"
-            echo "IDE_SIGNING_STORE_PASS=ci-store-pass" >> "$GITHUB_ENV"
-            echo "IDE_SIGNING_KEY_PASS=ci-key-pass" >> "$GITHUB_ENV"
+            echo "IDE_SIGNING_STORE_PASS=ci-sign-pass" >> "$GITHUB_ENV"
+            echo "IDE_SIGNING_KEY_PASS=ci-sign-pass" >> "$GITHUB_ENV"
             echo "Signing: throwaway CI key (repo IDE_SIGNING_* secrets not set yet)."
           else
             echo "Signing: repo IDE_SIGNING_* secrets."
@@ -122,7 +127,7 @@ jobs:
             echo "# DevxyzIDE Go — CI failure extract"
             echo "## java: $(java -version 2>&1 | head -1)"
             echo "## signing keystore check:"
-            keytool -list -keystore "$RUNNER_TEMP/ci-signing.p12" -storetype PKCS12 -storepass ci-store-pass 2>&1 | head -8 || echo "(no CI keystore — repo secrets path was used)"
+            keytool -list -keystore "$RUNNER_TEMP/ci-signing.p12" -storetype PKCS12 -storepass ci-sign-pass 2>&1 | head -8 || echo "(no CI keystore — repo secrets path was used)"
             for f in "$RUNNER_TEMP"/gradle-*.log; do
               [ -f "$f" ] || continue
               echo ""
