@@ -22,7 +22,7 @@ class OverlayStateTextEdgeTest {
 
 		assertThat(state.text()).isEqualTo(
 				"Build failed - app is running the last working version\nboom\n"
-						+ "For more info, see Build Output in Code on the Go.");
+						+ "For more info, see Build Output in DevxyzIDE Go.");
 	}
 
 	@Test
@@ -32,7 +32,7 @@ class OverlayStateTextEdgeTest {
 
 		assertThat(state.text()).isEqualTo(
 				"Build failed - app is running the last working version\nboom (+3 more)\n"
-						+ "For more info, see Build Output in Code on the Go.");
+						+ "For more info, see Build Output in DevxyzIDE Go.");
 	}
 
 	@Test
@@ -43,7 +43,7 @@ class OverlayStateTextEdgeTest {
 
 		assertThat(state.text())
 				.isEqualTo("Build failed - app is running the last working version\n"
-						+ "For more info, see Build Output in Code on the Go.");
+						+ "For more info, see Build Output in DevxyzIDE Go.");
 	}
 
 	@Test
@@ -55,6 +55,6 @@ class OverlayStateTextEdgeTest {
 
 		assertThat(state.text())
 				.isEqualTo("Live reload crashed. App is on the last working version.\n"
-						+ "For more info, see Build Output in Code on the Go.");
+						+ "For more info, see Build Output in DevxyzIDE Go.");
 	}
 }

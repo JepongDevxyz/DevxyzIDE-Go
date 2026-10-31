@@ -115,7 +115,7 @@ class OverlayStateTest {
 		// The user watching this app is the one person CoGo's own signals cannot reach;
 		// this banner is the recovery instruction, plus the standard honesty line.
 		OverlayState state = OverlayState.reinstallPending();
-		assertThat(state.text()).contains("Code on the Go");
+		assertThat(state.text()).contains("DevxyzIDE Go");
 		assertThat(state.text()).contains("running the last working version");
 	}
 }

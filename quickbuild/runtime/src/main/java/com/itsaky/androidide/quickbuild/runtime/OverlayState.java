@@ -14,7 +14,7 @@ final class OverlayState {
 	 *
 	 * The banner is a strip over the user's own app and deliberately cannot scroll, so it names the surface that holds the failure rather than carrying any of it. Build Output is the pane CoGo already writes the reported summary to, so this points at something that exists rather than something we would have to build. Its length is half of {@link CrashSummary#MAX_BANNER_LINES}' arithmetic - lengthening it without revisiting that clips the pointer itself, which is the one line the banner cannot afford to lose.
 	 */
-	static final String FULL_OUTPUT_POINTER = "For more info, see Build Output in Code on the Go.";
+	static final String FULL_OUTPUT_POINTER = "For more info, see Build Output in DevxyzIDE Go.";
 
 	/**
 	 * State for a compile error, carrying the message summary the banner names. The banner is position-free by design: the error location is CoGo's to show, so it never crosses the deploy channel.
@@ -167,7 +167,7 @@ final class OverlayState {
 			return "Live reload crashed. Restart the app - it is running mixed versions." + "\n"
 					+ FULL_OUTPUT_POINTER;
 		case REINSTALL_PENDING:
-			return "Update needs your OK in Code on the Go - switch back to approve it\n"
+			return "Update needs your OK in DevxyzIDE Go - switch back to approve it\n"
 					+ "This app is running the last working version";
 		case BUILDING:
 			return runningGeneration >= 0

@@ -39,13 +39,13 @@ const val APP_PLUGIN = "com.android.application"
 const val LIBRARY_PLUGIN = "com.android.library"
 
 const val INSTALL_TASK_UNSUPPORTED_MESSAGE =
-	"Code On The Go: adb is not available on the device, so Gradle cannot install the APK. " +
-		"When this task runs from the IDE, Code On The Go installs the built APK itself."
+	"DevxyzIDE Go: adb is not available on the device, so Gradle cannot install the APK. " +
+		"When this task runs from the IDE, DevxyzIDE Go installs the built APK itself."
 const val UNINSTALL_TASK_UNSUPPORTED_MESSAGE =
-	"Code On The Go: adb is not available on the device, so Gradle cannot uninstall the app. " +
+	"DevxyzIDE Go: adb is not available on the device, so Gradle cannot uninstall the app. " +
 		"Remove it from the device's Settings."
 const val ANDROID_TEST_INSTALL_UNSUPPORTED_MESSAGE =
-	"Code On The Go: adb is not available on the device, so instrumentation test APKs " +
+	"DevxyzIDE Go: adb is not available on the device, so instrumentation test APKs " +
 		"cannot be installed or uninstalled from Gradle."
 
 private const val AGP_INSTALL_TASK = "com.android.build.gradle.internal.tasks.InstallVariantTask"
