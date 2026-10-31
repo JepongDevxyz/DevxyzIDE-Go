@@ -91,6 +91,13 @@ jobs:
       - name: Install advancecomp (advzip for recompressApk)
         run: command -v advzip || { sudo apt-get update && sudo apt-get install -y advancecomp; }
 
+      # Assets: on GitHub Actions (GITHUB_ACTIONS=true → isCiCd in
+      # app/build.gradle.kts) the assemble tasks deliberately do NOT depend
+      # on assetsDownload* — upstream's own CI runs them explicitly first.
+      # Without assetsDownloadRelease, run 41172702158 failed the release
+      # build at :app:quickBuildBundledDistGate (gradle-9.6.1-bin.zip.br
+      # absent). So both invocations run their download task first
+      # (checksum-verified; a no-op when files are already current).
       # Memory budget for the 16 GB GitHub-hosted runner: upstream's
       # gradle.properties assumes self-hosted infra (daemon 8G + Kotlin
       # daemon 8G + aapt2 daemon 8G + 30 workers). Run 41169832898 died with
@@ -103,7 +110,7 @@ jobs:
           GRADLE_OPTS: "-Xmx3g"
         run: |
           set -o pipefail
-          ./gradlew :app:assembleV8Debug --no-daemon -Dorg.gradle.jvmargs="-Xmx6g" -Dkotlin.daemon.jvm.options="-Xmx3g" -Dorg.gradle.workers.max=8 -Pandroid.aapt2.daemonHeapSize=2048M 2>&1 | tee "$RUNNER_TEMP/gradle-debug.log"
+          ./gradlew :app:assetsDownloadDebug :app:assembleV8Debug --no-daemon -Dorg.gradle.jvmargs="-Xmx6g" -Dkotlin.daemon.jvm.options="-Xmx3g" -Dorg.gradle.workers.max=8 -Pandroid.aapt2.daemonHeapSize=2048M 2>&1 | tee "$RUNNER_TEMP/gradle-debug.log"
         # Asset downloads (dev-assets R2) are pulled in by the task graph.
         # Output is tee'd to a file so the failure extract below can pull the
         # exact error block without downloading the full multi-hundred-MB
@@ -114,7 +121,7 @@ jobs:
           GRADLE_OPTS: "-Xmx3g"
         run: |
           set -o pipefail
-          ./gradlew :app:assembleV8Release --no-daemon -Dorg.gradle.jvmargs="-Xmx6g" -Dkotlin.daemon.jvm.options="-Xmx3g" -Dorg.gradle.workers.max=8 -Pandroid.aapt2.daemonHeapSize=2048M -Pnext_release_version=26.44 2>&1 | tee "$RUNNER_TEMP/gradle-release.log"
+          ./gradlew :app:assetsDownloadRelease :app:assembleV8Release --no-daemon -Dorg.gradle.jvmargs="-Xmx6g" -Dkotlin.daemon.jvm.options="-Xmx3g" -Dorg.gradle.workers.max=8 -Pandroid.aapt2.daemonHeapSize=2048M -Pnext_release_version=26.44 2>&1 | tee "$RUNNER_TEMP/gradle-release.log"
         # next_release_version is mandatory for release (YY.ww format).
         # Signed with her key when the IDE_SIGNING_* secrets are set;
         # without them the build only warns and debug-signs (smoke builds).
