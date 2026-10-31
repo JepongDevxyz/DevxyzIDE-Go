@@ -163,6 +163,11 @@ fun Project.configureAndroidModule(coreLibDesugDep: Provider<MinimalExternalModu
 // 		}
 
 		if (":app" == project.path) {
+			// DevxyzIDE Go: -PdevxyzDownloadAssets=true builds a small release APK whose
+			// toolchain archives are downloaded on first launch instead of bundled.
+			val downloadAssets = (findProperty("devxyzDownloadAssets") as String?)?.toBoolean() ?: false
+			defaultConfig.buildConfigField("boolean", "DOWNLOAD_ASSETS", downloadAssets.toString())
+
 			flavorsAbis.forEach { (abi, _) ->
 				// the common defaultConfig, not the flavor-specific
 				defaultConfig.buildConfigField(
@@ -197,22 +202,27 @@ fun Project.configureAndroidModule(coreLibDesugDep: Provider<MinimalExternalModu
 						variant.packaging.jniLibs.useLegacyPackaging
 							.set(true)
 
-						// include bundled assets in the APK
-						val assetsDir = rootProject.file("assets/release")
-						variant.sources.assets?.apply {
-							val commonAssets = assetsDir.resolve("common")
-							val flavorAssets = assetsDir.resolve(variant.flavorName!!)
+						// include bundled assets in the APK -- skipped for DevxyzIDE Go
+						// download builds (-PdevxyzDownloadAssets=true): the toolchain
+						// archives are fetched on first launch by DownloadAssetsInstaller,
+						// so they must not be packaged into the APK.
+						if (!downloadAssets) {
+							val assetsDir = rootProject.file("assets/release")
+							variant.sources.assets?.apply {
+								val commonAssets = assetsDir.resolve("common")
+								val flavorAssets = assetsDir.resolve(variant.flavorName!!)
 
-							if (!commonAssets.isDirectory) {
-								throw GradleException("${commonAssets.absolutePath} does not exist or is not a directory")
+								if (!commonAssets.isDirectory) {
+									throw GradleException("${commonAssets.absolutePath} does not exist or is not a directory")
+								}
+
+								if (!flavorAssets.isDirectory) {
+									throw GradleException("${flavorAssets.absolutePath} does not exist or is not a directory")
+								}
+
+								addStaticSourceDirectory(commonAssets.absolutePath)
+								addStaticSourceDirectory(flavorAssets.absolutePath)
 							}
-
-							if (!flavorAssets.isDirectory) {
-								throw GradleException("${flavorAssets.absolutePath} does not exist or is not a directory")
-							}
-
-							addStaticSourceDirectory(commonAssets.absolutePath)
-							addStaticSourceDirectory(flavorAssets.absolutePath)
 						}
 					}
 				}

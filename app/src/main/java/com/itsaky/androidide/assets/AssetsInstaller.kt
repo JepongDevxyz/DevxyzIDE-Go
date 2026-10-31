@@ -28,8 +28,17 @@ sealed interface AssetsInstaller {
 
 		/**
 		 * The current assets installer.
+		 *
+		 * DevxyzIDE Go: release builds made with -PdevxyzDownloadAssets=true ship without the
+		 * bundled toolchain archives (small APK); those builds use [DownloadAssetsInstaller],
+		 * which fetches the same archives from the dev-assets mirror on first launch.
 		 */
-		internal val CURRENT_INSTALLER = if (USE_BUNDLED_ASSETS) BundledAssetsInstaller else SplitAssetsInstaller
+		internal val CURRENT_INSTALLER =
+			when {
+				USE_BUNDLED_ASSETS && BuildConfig.DOWNLOAD_ASSETS -> DownloadAssetsInstaller
+				USE_BUNDLED_ASSETS -> BundledAssetsInstaller
+				else -> SplitAssetsInstaller
+			}
 	}
 
 	/**
