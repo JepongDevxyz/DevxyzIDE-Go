@@ -33,7 +33,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.withResumed
 import androidx.recyclerview.widget.RecyclerView
 import com.github.appintro.SlidePolicy
 import com.github.appintro.SlideSelectionListener
@@ -51,7 +50,6 @@ import com.itsaky.androidide.preferences.internal.StatPreferences
 import com.itsaky.androidide.preferences.internal.TelemetryConsent
 import com.itsaky.androidide.tasks.doAsyncWithProgress
 import com.itsaky.androidide.utils.DialogUtils
-import com.itsaky.androidide.utils.OverlayPermissionGuide
 import com.itsaky.androidide.utils.PermissionsHelper
 import com.itsaky.androidide.utils.flashError
 import com.itsaky.androidide.utils.flashSuccess
@@ -257,13 +255,10 @@ class PermissionsFragment :
 		}
 		awaitingOverlayGrantResult = false
 
-		viewLifecycleScope.launch {
-			viewLifecycleOwner.withResumed {
-				if (!PermissionsHelper.canDrawOverlays(requireContext())) {
-					OverlayPermissionGuide.showRestrictedSettingsDialog(requireContext())
-				}
-			}
-		}
+		// DevxyzIDE Go: no restricted-settings guide dialog here. The overlay
+		// permission is optional in this fork, and Android's own settings page
+		// already explains the one-time "Allow restricted settings" unlock --
+		// re-popping a guide dialog after every denied attempt was pure friction.
 	}
 
 	private fun startIdeSetup() {
