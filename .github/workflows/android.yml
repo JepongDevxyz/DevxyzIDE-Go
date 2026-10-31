@@ -86,19 +86,30 @@ jobs:
       - name: Install advancecomp (advzip for recompressApk)
         run: command -v advzip || { sudo apt-get update && sudo apt-get install -y advancecomp; }
 
+      # Memory budget for the 16 GB GitHub-hosted runner: upstream's
+      # gradle.properties assumes self-hosted infra (daemon 8G + Kotlin
+      # daemon 8G + aapt2 daemon 8G + 30 workers). Run 41169832898 died with
+      # the Gradle CLIENT hitting OutOfMemoryError while reading a giant
+      # log event from the daemon (the --stacktrace report of the real
+      # failure), so: no --stacktrace, a real heap for the client via
+      # GRADLE_OPTS, and scaled-down daemon/Kotlin/aapt2/worker budgets.
       - name: Build v8 debug APK
+        env:
+          GRADLE_OPTS: "-Xmx3g"
         run: |
           set -o pipefail
-          ./gradlew :app:assembleV8Debug --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx8g" 2>&1 | tee "$RUNNER_TEMP/gradle-debug.log"
+          ./gradlew :app:assembleV8Debug --no-daemon -Dorg.gradle.jvmargs="-Xmx6g" -Dkotlin.daemon.jvm.options="-Xmx3g" -Dorg.gradle.workers.max=8 -Pandroid.aapt2.daemonHeapSize=2048M 2>&1 | tee "$RUNNER_TEMP/gradle-debug.log"
         # Asset downloads (dev-assets R2) are pulled in by the task graph.
         # Output is tee'd to a file so the failure extract below can pull the
         # exact error block without downloading the full multi-hundred-MB
         # Actions log archive (those downloads kept getting interrupted).
 
       - name: Build v8 release APK
+        env:
+          GRADLE_OPTS: "-Xmx3g"
         run: |
           set -o pipefail
-          ./gradlew :app:assembleV8Release --no-daemon --stacktrace -Pnext_release_version=26.44 -Dorg.gradle.jvmargs="-Xmx8g" 2>&1 | tee "$RUNNER_TEMP/gradle-release.log"
+          ./gradlew :app:assembleV8Release --no-daemon -Dorg.gradle.jvmargs="-Xmx6g" -Dkotlin.daemon.jvm.options="-Xmx3g" -Dorg.gradle.workers.max=8 -Pandroid.aapt2.daemonHeapSize=2048M -Pnext_release_version=26.44 2>&1 | tee "$RUNNER_TEMP/gradle-release.log"
         # next_release_version is mandatory for release (YY.ww format).
         # Signed with her key when the IDE_SIGNING_* secrets are set;
         # without them the build only warns and debug-signs (smoke builds).
@@ -120,6 +131,8 @@ jobs:
               grep -m5 "Execution failed for task" "$f" || true
               grep -A 60 "FAILURE: Build failed with an exception" "$f" | head -120 || true
               grep -m10 "Caused by:" "$f" || true
+              echo "--- context around first validateSigning mention ---"
+              grep -B2 -A12 -m1 "validateSigning" "$f" || true
             done
           } > "$OUT" 2>&1 || true
           cat "$OUT"
