@@ -87,14 +87,51 @@ jobs:
         run: command -v advzip || { sudo apt-get update && sudo apt-get install -y advancecomp; }
 
       - name: Build v8 debug APK
-        run: ./gradlew :app:assembleV8Debug --no-daemon -Dorg.gradle.jvmargs="-Xmx8g"
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleV8Debug --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx8g" 2>&1 | tee "$RUNNER_TEMP/gradle-debug.log"
         # Asset downloads (dev-assets R2) are pulled in by the task graph.
+        # Output is tee'd to a file so the failure extract below can pull the
+        # exact error block without downloading the full multi-hundred-MB
+        # Actions log archive (those downloads kept getting interrupted).
 
       - name: Build v8 release APK
-        run: ./gradlew :app:assembleV8Release --no-daemon -Pnext_release_version=26.44 -Dorg.gradle.jvmargs="-Xmx8g"
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleV8Release --no-daemon --stacktrace -Pnext_release_version=26.44 -Dorg.gradle.jvmargs="-Xmx8g" 2>&1 | tee "$RUNNER_TEMP/gradle-release.log"
         # next_release_version is mandatory for release (YY.ww format).
         # Signed with her key when the IDE_SIGNING_* secrets are set;
         # without them the build only warns and debug-signs (smoke builds).
+
+      - name: Publish failure extract
+        if: failure()
+        run: |
+          OUT="$RUNNER_TEMP/failure-extract.txt"
+          {
+            echo "# DevxyzIDE Go — CI failure extract"
+            echo "## java: $(java -version 2>&1 | head -1)"
+            echo "## signing keystore check:"
+            keytool -list -keystore "$RUNNER_TEMP/ci-signing.p12" -storetype PKCS12 -storepass ci-store-pass 2>&1 | head -8 || echo "(no CI keystore — repo secrets path was used)"
+            for f in "$RUNNER_TEMP"/gradle-*.log; do
+              [ -f "$f" ] || continue
+              echo ""
+              echo "===== $f ====="
+              grep -m3 "Signing info\|IDE_SIGNING" "$f" || true
+              grep -m5 "Execution failed for task" "$f" || true
+              grep -A 60 "FAILURE: Build failed with an exception" "$f" | head -120 || true
+              grep -m10 "Caused by:" "$f" || true
+            done
+          } > "$OUT" 2>&1 || true
+          cat "$OUT"
+          cat "$OUT" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload failure extract
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-extract
+          path: ${{ runner.temp }}/failure-extract.txt
+          if-no-files-found: warn
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
