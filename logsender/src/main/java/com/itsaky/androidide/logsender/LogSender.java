@@ -49,7 +49,11 @@ public final class LogSender extends ILogSender.Stub implements ServiceConnectio
 	/**
 	 * AndroidIDE's package name.
 	 */
-	public static final String PACKAGE_ANDROIDIDE = "com.itsaky.androidide";
+	// DevxyzIDE Go: the IDE's applicationId in this fork. The installer guard
+	// ("do not send logs to self") and the bind target must name this app, not
+	// upstream's package -- with the upstream value the IDE itself started the
+	// log sender and failed to bind ("Failed to bind to Code On The Go").
+	public static final String PACKAGE_ANDROIDIDE = "com.jepongdevxyz.go";
 
 	private final AtomicBoolean isBinding = new AtomicBoolean(false);
 

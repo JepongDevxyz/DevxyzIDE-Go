@@ -92,7 +92,11 @@ object PermissionsHelper {
 				R.string.permission_title_overlay_window,
 				if (isOverlaySupported) R.string.permission_desc_overlay_window else R.string.permission_overlay_unsupported_hint,
 				overlayState == OverlayPermissionState.GRANTED,
-				isOptional = !isOverlaySupported,
+				// DevxyzIDE Go: the floating-debugger overlay is a convenience, never a
+				// setup requirement. Sideloaded installs can be blocked from granting it
+				// by Android's restricted settings (and some OEMs hide the unlock), so it
+				// must not gate onboarding -- users can still grant it via the Allow row.
+				isOptional = true,
 				isSupportedOnDevice = isOverlaySupported
 			)
 		)
