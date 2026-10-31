@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public final class Environment {
 
 	public static final String PROJECTS_FOLDER = "CodeOnTheGoProjects";
-	public static final String DEFAULT_ROOT = "/data/data/" + BuildInfo.PACKAGE_NAME + "/files";
+	public static final String DEFAULT_ROOT = "/data/data/" + BuildInfo.APPLICATION_ID + "/files";
 	public static final String DEFAULT_HOME = DEFAULT_ROOT + "/home";
 	private static final String DEFAULT_ANDROID_HOME = DEFAULT_HOME + "/android-sdk";
 	public static final String GRADLE_CACHE_DIR = DEFAULT_HOME + "/.gradle";

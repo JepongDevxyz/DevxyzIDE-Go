@@ -163,7 +163,7 @@ object ApkInstaller {
 			}
 
 			if (isAtLeastU()) {
-				setInstallerPackageName(BuildInfo.PACKAGE_NAME)
+				setInstallerPackageName(BuildInfo.APPLICATION_ID)
 				setRequestUpdateOwnership(true)
 				setApplicationEnabledSettingPersistent()
 			}

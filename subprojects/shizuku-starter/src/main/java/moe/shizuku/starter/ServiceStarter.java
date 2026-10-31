@@ -91,7 +91,7 @@ public class ServiceStarter {
 	}
 
 	private static boolean sendBinder(IBinder binder, String token, boolean retry) {
-		String packageName = BuildInfo.PACKAGE_NAME;
+		String packageName = BuildInfo.APPLICATION_ID;
 		String name = packageName + ".shizuku";
 		int userId = 0;
 		IContentProvider provider = null;

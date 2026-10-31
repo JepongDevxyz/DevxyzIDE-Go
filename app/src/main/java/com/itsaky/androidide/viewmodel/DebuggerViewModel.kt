@@ -491,7 +491,7 @@ class DebuggerViewModel : ViewModel() {
 
 	fun switchToIde(context: Context) {
 		val packageManager = context.packageManager
-		val launchIntent = packageManager.getLaunchIntentForPackage(BuildInfo.PACKAGE_NAME)
+		val launchIntent = packageManager.getLaunchIntentForPackage(BuildInfo.APPLICATION_ID)
 		val component = launchIntent?.component
 
 		val launchWithIntent: () -> Unit = {
@@ -530,7 +530,7 @@ class DebuggerViewModel : ViewModel() {
 		} else {
 			logger.error(
 				"Unable to switch to IDE. Cannot find launch intent for package {}. Found intent: {}",
-				BuildInfo.PACKAGE_NAME,
+				BuildInfo.APPLICATION_ID,
 				launchIntent,
 			)
 		}

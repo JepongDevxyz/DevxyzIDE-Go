@@ -28,6 +28,12 @@ public class BuildInfo {
   public static final String INTERNAL_NAME = "@@INTERNAL_NAME@@";
   public static final String PACKAGE_NAME = "@@PACKAGE_NAME@@";
 
+  // DevxyzIDE Go: the installed app's applicationId. PACKAGE_NAME above is the
+  // internal code package (com.itsaky.androidide) and must NOT be used for
+  // system lookups (settings intents, /data/data paths, installer attribution)
+  // -- those need the applicationId the app is actually installed under.
+  public static final String APPLICATION_ID = "@@APPLICATION_ID@@";
+
   // ---------- Tooling version info --------------
   public static final String AGP_VERSION_MININUM = "@@AGP_VERSION_MININUM@@";
   public static final String AGP_VERSION_LATEST = "@@AGP_VERSION_LATEST@@";

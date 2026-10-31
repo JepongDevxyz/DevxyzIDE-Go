@@ -86,7 +86,7 @@ class DebuggerService : Service() {
 		logger.debug("onForegroundAppChanged(event={})", foregroundAppState)
 		val packageNames = foregroundAppState.packageNames
 
-		val isCotg = BuildInfo.PACKAGE_NAME in packageNames
+		val isCotg = BuildInfo.APPLICATION_ID in packageNames
 		val isEditorActivityInForeground = ourForegroundActivity is BaseEditorActivity
 		logger.debug(
 			"isCotg={}, isEditorActivityInForeground={}",

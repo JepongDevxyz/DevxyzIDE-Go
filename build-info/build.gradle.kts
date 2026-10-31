@@ -56,6 +56,7 @@ tasks.create("generateBuildInfo") {
 				arrayOf(
 					"INTERNAL_NAME" to BuildConfig.INTERNAL_NAME,
 					"PACKAGE_NAME" to BuildConfig.PACKAGE_NAME,
+					"APPLICATION_ID" to BuildConfig.APPLICATION_ID,
 					"MVN_GROUP_ID" to BuildConfig.PACKAGE_NAME,
 					"VERSION_NAME" to rootProject.version.toString(),
 					"VERSION_NAME_SIMPLE" to rootProject.simpleVersionName,

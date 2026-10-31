@@ -72,7 +72,7 @@ public class BinderSender {
 
 	private static void broadcastForegroundAppChanged(int uid, int pid, String[] packages) {
 		final var intent = new Intent(ACTION_FOREGROUND_APP_CHANGED);
-		intent.setPackage(BuildInfo.PACKAGE_NAME);
+		intent.setPackage(BuildInfo.APPLICATION_ID);
 		intent.putExtra(EXTRA_FOREGROUND_UID, uid);
 		intent.putExtra(EXTRA_FOREGROUND_PID, pid);
 		intent.putExtra(EXTRA_FOREGROUND_PACKAGES, packages);

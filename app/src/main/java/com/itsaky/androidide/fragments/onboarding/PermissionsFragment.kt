@@ -381,9 +381,11 @@ class PermissionsFragment :
 		setData: Boolean = true,
 	): Boolean {
 		val intent = Intent(action)
-		intent.putExtra(Settings.EXTRA_APP_PACKAGE, BuildInfo.PACKAGE_NAME)
+		// Must be the applicationId the app is installed under -- BuildInfo.PACKAGE_NAME
+		// is the internal code package, and Settings answers "app wasn't found" for it.
+		intent.putExtra(Settings.EXTRA_APP_PACKAGE, BuildInfo.APPLICATION_ID)
 		if (setData) {
-			intent.setData(Uri.fromParts("package", BuildInfo.PACKAGE_NAME, null))
+			intent.setData(Uri.fromParts("package", BuildInfo.APPLICATION_ID, null))
 		}
 		return try {
 			settingsTogglePermissionRequestLauncher.launch(intent)
