@@ -107,3 +107,7 @@ Any violations to the license can be reported either by opening an issue or writ
 directly.
 
 
+
+## DevxyzIDE Go build variant: downloadable toolchain assets
+
+The CI release build on branch `devxyz-go-phase0` is made with `-PdevxyzDownloadAssets=true`: the APK does **not** bundle the large toolchain archives (Gradle distribution, Android SDK, bootstrap, local Maven repository, documentation DB, Gradle API jar, template core). On first launch, the IDE Setup downloads them from the upstream dev-assets mirror (`https://dev-assets.appdevforall.org/release/...`), verifying each file's MD5 against the mirror's `.md5` sidecar — the same archives and checksums the build itself uses. Downloads are cached in the app's files directory, so an interrupted setup resumes with only the missing or corrupt files. Building without the flag keeps the original fully-bundled APK. See `DownloadAssetsInstaller.kt`.
