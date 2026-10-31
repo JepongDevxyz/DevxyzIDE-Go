@@ -3,6 +3,12 @@ name: Build APK
 on:
   push:
     branches: [devxyz-go-phase0]
+    # Pushes that only touch workflow files (e.g. deleting the 18 inherited
+    # upstream workflows one by one via the web UI) must not start a build
+    # each time. Code pushes still trigger normally; workflow_dispatch
+    # remains available for manual runs.
+    paths-ignore:
+      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
