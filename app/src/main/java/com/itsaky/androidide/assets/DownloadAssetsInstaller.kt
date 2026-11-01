@@ -58,6 +58,11 @@ data object DownloadAssetsInstaller : BaseAssetsInstaller() {
 	private const val DEV_ASSETS_BASE_URL = "https://dev-assets.appdevforall.org"
 	private const val DOWNLOADED_ASSETS_DIR = "downloaded-assets"
 
+	private const val MODE_UNDECIDED = -1
+	private const val MODE_TEXT = 0
+	private const val MODE_ELF = 1
+	private const val MODE_OTHER_BINARY = 2
+
 	private fun downloadedRoot(context: Context): File = File(context.filesDir, DOWNLOADED_ASSETS_DIR)
 
 	private fun archDir(cpuArch: CpuArch): String =
@@ -203,9 +208,24 @@ data object DownloadAssetsInstaller : BaseAssetsInstaller() {
 	 * (`#!/data/data/com.itsaky.androidide/files/usr/bin/bash`), whose interpreter does
 	 * not exist under this app's sandbox, which made the second stage fail with a
 	 * message-less error. Rewrite those references to this app's own prefix in the
-	 * decompressed bootstrap zip before [TerminalInstaller] consumes it: plain
-	 * replacement in text entries, NUL-padded (length-preserving) replacement in
-	 * binary entries so embedded C strings stay valid and no offsets shift.
+	 * decompressed bootstrap zip before [TerminalInstaller] consumes it.
+	 *
+	 * How each entry kind is rewritten (learned from a real on-device linker failure --
+	 * padding a replacement immediately truncates every string of which the upstream
+	 * path is only a prefix, e.g. an ELF RUNPATH `/data/data/<pkg>/files/usr/lib` became
+	 * `/data/data/<own-pkg>`, so bash died with "library libandroid-support.so not
+	 * found"):
+	 * - Text entries: exact replacement (scripts, SYMLINKS.txt, configs).
+	 * - ELF entries: string-aware replacement. Embedded paths live in NUL-terminated
+	 *   strings; the replacement is shorter, the rest of the string is copied verbatim,
+	 *   and the saved bytes are returned as extra NUL padding AFTER the string's own
+	 *   terminator -- so every string reads exactly as the clean own prefix, the entry
+	 *   keeps its exact length, and no ELF offset shifts.
+	 * - Other binary entries (the JDK's .jmod archives and jimage `lib/modules`): left
+	 *   completely untouched. Their embedded paths sit in length-prefixed structures
+	 *   guarded by CRC/integrity data, so any content edit corrupts them; they are not
+	 *   needed by the bootstrap and their JDK-internal paths (resolv.conf, mtab, ...)
+	 *   are soft fallbacks.
 	 */
 	private fun patchBootstrapPrefix(zipPath: Path) {
 		val ownPackage = TermuxConstants.TERMUX_PACKAGE_NAME
@@ -257,9 +277,10 @@ data object DownloadAssetsInstaller : BaseAssetsInstaller() {
 
 	/**
 	 * Streams [input] to [out], replacing every occurrence of [pathNeedle] and
-	 * [pkgNeedle] (longest match first). The entry is classified as binary when its
-	 * first chunk contains a NUL byte; binary replacements are padded with NULs to
-	 * the needle's length, text replacements are exact.
+	 * [pkgNeedle] (longest match first) according to the entry kind, which is decided
+	 * from its first chunk: text (no NUL byte) gets exact replacement; an ELF (magic
+	 * bytes, NUL present) gets string-aware length-preserving replacement; any other
+	 * binary is copied through untouched (see [patchBootstrapPrefix] for why).
 	 */
 	private fun copyReplacingPrefix(
 		input: InputStream,
@@ -272,18 +293,49 @@ data object DownloadAssetsInstaller : BaseAssetsInstaller() {
 		val maxNeedle = pathNeedle.size
 		val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
 		var pending = ByteArray(0)
-		var binary: Boolean? = null
+		var mode = MODE_UNDECIDED
 
-		fun replacementFor(needleSize: Int, replacement: ByteArray): ByteArray =
-			if (binary == true && replacement.size < needleSize) {
-				replacement + ByteArray(needleSize - replacement.size)
-			} else {
-				replacement
+		// Exact substitution inside one byte range (used for a whole text stream via
+		// drainText below, and for single NUL-terminated strings via transformToken).
+		fun substitute(data: ByteArray, start: Int, end: Int, sink: (ByteArray, Int, Int) -> Unit) {
+			var segmentStart = start
+			var i = start
+			while (i < end) {
+				val matched =
+					when {
+						matchesAt(data, i, pathNeedle) && i + pathNeedle.size <= end ->
+							pathNeedle.size to pathReplacement
+						matchesAt(data, i, pkgNeedle) && i + pkgNeedle.size <= end ->
+							pkgNeedle.size to pkgReplacement
+						else -> null
+					}
+				if (matched != null) {
+					if (i > segmentStart) {
+						sink(data, segmentStart, i - segmentStart)
+					}
+					sink(matched.second, 0, matched.second.size)
+					i += matched.first
+					segmentStart = i
+				} else {
+					i++
+				}
 			}
+			if (end > segmentStart) {
+				sink(data, segmentStart, end - segmentStart)
+			}
+		}
 
-		// Emits the transformable part of `pending`; keeps a tail of up to
+		fun transformToken(token: ByteArray): ByteArray {
+			val result = java.io.ByteArrayOutputStream(token.size)
+			substitute(token, 0, token.size) { bytes, offset, length ->
+				result.write(bytes, offset, length)
+			}
+			return result.toByteArray()
+		}
+
+		// Text mode: emits the transformable part of `pending`; keeps a tail of up to
 		// maxNeedle-1 bytes unprocessed unless `flushAll` (a match could span chunks).
-		fun drain(flushAll: Boolean) {
+		fun drainText(flushAll: Boolean) {
 			var segmentStart = 0
 			var i = 0
 			val limit = if (flushAll) pending.size else pending.size - (maxNeedle - 1)
@@ -298,7 +350,7 @@ data object DownloadAssetsInstaller : BaseAssetsInstaller() {
 					if (i > segmentStart) {
 						out.write(pending, segmentStart, i - segmentStart)
 					}
-					out.write(replacementFor(matched.first, matched.second))
+					out.write(matched.second)
 					i += matched.first
 					segmentStart = i
 				} else {
@@ -317,18 +369,71 @@ data object DownloadAssetsInstaller : BaseAssetsInstaller() {
 				}
 		}
 
+		// ELF mode: only complete NUL-terminated strings are processed; the saved
+		// length of each substituted string is returned as NUL padding right after
+		// that string's terminator, keeping the entry's total length unchanged.
+		fun drainElf(flushAll: Boolean) {
+			while (true) {
+				val nulIndex = pending.indexOf(0.toByte())
+				if (nulIndex < 0) {
+					break
+				}
+				val token = pending.copyOfRange(0, nulIndex)
+				val transformed = transformToken(token)
+				out.write(transformed)
+				out.write(0)
+				val debt = token.size - transformed.size
+				if (debt > 0) {
+					out.write(ByteArray(debt))
+				}
+				pending = pending.copyOfRange(nulIndex + 1, pending.size)
+			}
+			if (flushAll && pending.isNotEmpty()) {
+				val transformed = transformToken(pending)
+				out.write(transformed)
+				val debt = pending.size - transformed.size
+				if (debt > 0) {
+					out.write(ByteArray(debt))
+				}
+				pending = ByteArray(0)
+			}
+		}
+
 		while (true) {
 			val read = input.read(buffer)
 			if (read == -1) {
 				break
 			}
-			if (binary == null) {
-				binary = buffer.copyOf(read).contains(0.toByte())
+			if (mode == MODE_UNDECIDED) {
+				val first = buffer.copyOf(read)
+				mode =
+					when {
+						!first.contains(0.toByte()) -> MODE_TEXT
+						read >= 4 &&
+							first[0] == 0x7F.toByte() &&
+							first[1] == 'E'.code.toByte() &&
+							first[2] == 'L'.code.toByte() &&
+							first[3] == 'F'.code.toByte() -> MODE_ELF
+						else -> MODE_OTHER_BINARY
+					}
 			}
-			pending += buffer.copyOf(read)
-			drain(flushAll = false)
+			when (mode) {
+				MODE_OTHER_BINARY -> out.write(buffer, 0, read)
+				MODE_ELF -> {
+					pending += buffer.copyOf(read)
+					drainElf(flushAll = false)
+				}
+				else -> {
+					pending += buffer.copyOf(read)
+					drainText(flushAll = false)
+				}
+			}
 		}
-		drain(flushAll = true)
+		when (mode) {
+			MODE_ELF -> drainElf(flushAll = true)
+			MODE_OTHER_BINARY -> Unit
+			else -> drainText(flushAll = true)
+		}
 	}
 
 	private fun matchesAt(
