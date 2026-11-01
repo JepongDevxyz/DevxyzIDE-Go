@@ -36,14 +36,14 @@ data class ServerConfig(
 			"/Download/documentation.db",
 	val debugEnablePath: String =
 		getExternalStorageDirectory().toString() +
-			"/Download/CodeOnTheGo.webserver.debug",
+			"/Download/DevxyzIDEGo.webserver.debug",
 	val experimentsEnablePath: String =
 		getExternalStorageDirectory().toString() +
-			"/Download/CodeOnTheGo.exp",
+			"/Download/DevxyzIDEGo.exp",
 	// TODO: Centralize this concept. --DS, 9-Feb-2026
 	val clearCacheEnablePath: String =
 		getExternalStorageDirectory().toString() +
-			"/Download/CodeOnTheGo.webserver.cs0",
+			"/Download/DevxyzIDEGo.webserver.cs0",
 	// Yes, this is hack code.
 	val projectDatabasePath: String = "/data/data/com.jepongdevxyz.go/databases/RecentProject_database",
 	// ADFA-5175: how often the sdcard debug database may be stat'ed. It lives on FUSE-backed

@@ -170,7 +170,7 @@ class DocumentationRequestInterceptor(
 		 */
 		internal fun mimeAndCharset(mimeType: String): Pair<String, String?> = ContentTypeHeaders.typeAndCharset(mimeType)
 
-		private const val DISABLE_SENTINEL = "Download/CodeOnTheGo.nointercept"
+		private const val DISABLE_SENTINEL = "Download/DevxyzIDEGo.nointercept"
 		private const val SERVER_HOST = "localhost"
 		private const val SERVER_PORT = 6174
 

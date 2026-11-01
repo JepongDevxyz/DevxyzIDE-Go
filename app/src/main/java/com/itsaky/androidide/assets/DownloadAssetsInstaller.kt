@@ -436,6 +436,67 @@ data object DownloadAssetsInstaller : BaseAssetsInstaller() {
 		}
 	}
 
+	/**
+	 * The project-template archive (core.cgt, a zip) ships upstream branding inside the
+	 * templates themselves: the NavigationDrawer template's header title is the upstream
+	 * product name, and one whole template is named after it. Rewrite the archive in
+	 * place at install time: entry names and text-entry contents get the brand
+	 * substitutions (so templates.json stays consistent with the renamed template
+	 * directory); binary entries (launcher icons etc.) are copied byte for byte.
+	 */
+	private fun patchTemplatesArchive(zipPath: Path) {
+		val substitutions =
+			listOf(
+				"Code on the Go" to "DevxyzIDE Go",
+				"Code On the Go" to "DevxyzIDE Go",
+				"CodeOnTheGo" to "DevxyzIDEGo",
+			)
+
+		fun substituteText(bytes: ByteArray): ByteArray {
+			var result = bytes
+			for ((from, to) in substitutions) {
+				result =
+					String(result, Charsets.UTF_8)
+						.replace(from, to)
+						.toByteArray(Charsets.UTF_8)
+			}
+			return result
+		}
+
+		val zipFile = zipPath.toFile()
+		val patchedFile = File(zipFile.parentFile, zipFile.name + ".patched")
+		ZipFile.builder()
+			.setSeekableByteChannel(Files.newByteChannel(zipPath))
+			.get().use { zip ->
+				BufferedOutputStream(patchedFile.outputStream()).use { bufferedOut ->
+					ZipArchiveOutputStream(bufferedOut).use { out ->
+						for (entry in zip.entries) {
+							var newName = entry.name
+							for ((from, to) in substitutions) {
+								newName = newName.replace(from, to)
+							}
+							val newEntry = ZipArchiveEntry(newName)
+							newEntry.method = ZipEntry.DEFLATED
+							newEntry.unixMode = entry.unixMode
+							newEntry.time = entry.time
+							out.putArchiveEntry(newEntry)
+							if (!entry.isDirectory) {
+								zip.getInputStream(entry).use { input ->
+									val content = input.readBytes()
+									val isText = !content.copyOf(minOf(content.size, 8192)).contains(0.toByte())
+									out.write(if (isText) substituteText(content) else content)
+								}
+							}
+							out.closeArchiveEntry()
+						}
+					}
+				}
+			}
+		Files.delete(zipPath)
+		Files.move(patchedFile.toPath(), zipPath)
+		logger.info("Rewrote template archive branding in {}", zipPath)
+	}
+
 	private fun matchesAt(
 		data: ByteArray,
 		offset: Int,
@@ -516,6 +577,7 @@ data object DownloadAssetsInstaller : BaseAssetsInstaller() {
 						destFile.outputStream().use { output ->
 							input.copyTo(output)
 						}
+						patchTemplatesArchive(destFile.toPath())
 					}
 				}
 

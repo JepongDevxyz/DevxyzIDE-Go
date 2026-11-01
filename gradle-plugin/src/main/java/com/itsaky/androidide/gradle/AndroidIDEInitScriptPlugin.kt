@@ -145,7 +145,7 @@ class AndroidIDEInitScriptPlugin : Plugin<Gradle> {
 		val logsDir = File(gradleUserHomeDir, "daemon/$currentGradleVersion")
 
 		if (logsDir.exists() && logsDir.isDirectory) {
-			logger.lifecycle("Code On the Go clean logs of gradle ($currentGradleVersion) task running....")
+			logger.lifecycle("DevxyzIDE Go clean logs of gradle ($currentGradleVersion) task running....")
 
 			logsDir
 				.listFiles()

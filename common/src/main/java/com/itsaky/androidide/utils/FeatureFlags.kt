@@ -28,14 +28,14 @@ private data class FlagsCache(
 }
 
 object FeatureFlags {
-	private const val EXPERIMENTS_FILE_NAME = "CodeOnTheGo.exp"
-	private const val LOGD_FILE_NAME = "CodeOnTheGo.logd"
+	private const val EXPERIMENTS_FILE_NAME = "DevxyzIDEGo.exp"
+	private const val LOGD_FILE_NAME = "DevxyzIDEGo.logd"
 	private const val EMULATOR_FILE_NAME = "S153.txt"
-	private const val REPRIEVE_FILE_NAME = "CodeOnTheGo.a3s19"
-	private const val PARDON_FILE_NAME = "CodeOnTheGo.a2s2"
-	private const val LEAKCANARY_FILE_NAME = "CodeOnTheGo.lc"
-	private const val QUICK_BUILD_BENCH_FILE_NAME = "CodeOnTheGo.qbbench"
-	private const val QUICK_BUILD_NO_SEED_FILE_NAME = "CodeOnTheGo.qbnoseed"
+	private const val REPRIEVE_FILE_NAME = "DevxyzIDEGo.a3s19"
+	private const val PARDON_FILE_NAME = "DevxyzIDEGo.a2s2"
+	private const val LEAKCANARY_FILE_NAME = "DevxyzIDEGo.lc"
+	private const val QUICK_BUILD_BENCH_FILE_NAME = "DevxyzIDEGo.qbbench"
+	private const val QUICK_BUILD_NO_SEED_FILE_NAME = "DevxyzIDEGo.qbnoseed"
 
 	private val logger = LoggerFactory.getLogger(FeatureFlags::class.java)
 
@@ -111,13 +111,13 @@ object FeatureFlags {
 		get() = flags.pardonEnabled
 
 	/**
-	 * Whether LeakCanary heap dumping is inhibited (CodeOnTheGo.lc present in Downloads).
+	 * Whether LeakCanary heap dumping is inhibited (DevxyzIDEGo.lc present in Downloads).
 	 */
 	val isLeakCanaryDumpInhibited: Boolean
 		get() = flags.leakCanaryDumpInhibited
 
 	/**
-	 * Whether the Quick Build benchmark hooks are enabled (CodeOnTheGo.qbbench present in
+	 * Whether the Quick Build benchmark hooks are enabled (DevxyzIDEGo.qbbench present in
 	 * Downloads). Gates the adb-triggerable bench activity and the JSON-lines event file
 	 * (ADFA-4128); always paired with [isExperimentsEnabled]. Off in shipping builds.
 	 */
@@ -125,7 +125,7 @@ object FeatureFlags {
 		get() = flags.quickBuildBenchEnabled
 
 	/**
-	 * Whether the Quick Build background warm compile is disabled (CodeOnTheGo.qbnoseed present in
+	 * Whether the Quick Build background warm compile is disabled (DevxyzIDEGo.qbnoseed present in
 	 * Downloads). Bench-only A/B seam (ADFA-4128), inert unless [isQuickBuildBenchEnabled]
 	 * is also on - the DI wiring pairs the two.
 	 */
