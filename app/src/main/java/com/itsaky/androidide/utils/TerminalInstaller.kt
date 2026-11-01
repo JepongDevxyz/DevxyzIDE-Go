@@ -395,6 +395,36 @@ object TerminalInstaller {
 
             if (shell == null || !executionCommand.isSuccessful || executionCommand.resultData.exitCode != 0) {
 
+                // Surface the second stage's real result (exit code, internal errors and the
+                // tails of its stdout/stderr) instead of the prefix-deletion result, whose
+                // markdown is the literal string "null" whenever deletion succeeds -- that
+                // hid the actual failure cause behind a meaningless "Unable to install
+                // bootstrap: null" message.
+                val resultData = executionCommand.resultData
+                val diagnosticMessage = buildString {
+                    append("Bootstrap second stage failed (exit code: ")
+                    append(resultData.exitCode?.toString() ?: "unknown")
+                    append(").")
+                    if (resultData.errorsList.isNotEmpty()) {
+                        append("\n\nErrors:\n")
+                        append(
+                            resultData.errorsList.joinToString("\n") { err ->
+                                Error.getMinimalErrorString(err)
+                            }.take(600)
+                        )
+                    }
+                    val stderrText = resultData.stderr.toString().trim()
+                    if (stderrText.isNotEmpty()) {
+                        append("\n\nstderr (last part):\n")
+                        append(stderrText.takeLast(900))
+                    }
+                    val stdoutText = resultData.stdout.toString().trim()
+                    if (stdoutText.isNotEmpty()) {
+                        append("\n\nstdout (last part):\n")
+                        append(stdoutText.takeLast(600))
+                    }
+                }
+
                 // Delete prefix directory as otherwise when app is restarted, the broken prefix directory would be used and logged into.
                 error =
                     FileUtils.deleteFile("termux prefix directory", TERMUX_PREFIX_DIR_PATH, true)
@@ -402,7 +432,7 @@ object TerminalInstaller {
                 logger.error("Failed to run Termux second-stage command: {}", error)
                 return InstallResult.Error.Interactive(
                     title = context.getString(R.string.bootstrap_error_title),
-                    message = Error.getErrorMarkdownString(error),
+                    message = diagnosticMessage,
                 )
             }
         }
