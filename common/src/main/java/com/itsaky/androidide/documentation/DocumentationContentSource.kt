@@ -231,6 +231,14 @@ class DocumentationContentSource internal constructor(
 	@Volatile
 	private var templatesCompressed: Boolean? = null
 
+	// Whether the active database's Content table has the templateId column, or null until its
+	// first lookup asks. Cleared on every swap, like [templatesCompressed]. The database the IDE
+	// downloads is still the earlier schema, whose Content rows carry no template id at all:
+	// selecting the column there fails every lookup, so those databases are read with
+	// CONTENT_QUERY_LEGACY instead.
+	@Volatile
+	private var contentHasTemplateId: Boolean? = null
+
 	// The loader reads Templates rows, so a template can reference another one (ADFA-5405). It also
 	// makes the engine's own cache the compiled-template cache, keyed by name: a partial pulled in
 	// by several pages is compiled once, and dropping a database means invalidating that cache too.
@@ -502,7 +510,7 @@ class DocumentationContentSource internal constructor(
 			log.warn("Could not prime the compression dictionary; will retry on the next read: {}", e.message)
 		}
 
-		database.rawQuery(CONTENT_QUERY, arrayOf(path)).use { cursor ->
+		database.rawQuery(contentQuery(database), arrayOf(path)).use { cursor ->
 			if (cursor.count == 0) return DocumentationLookup.NotFound
 			if (cursor.count != 1) return DocumentationLookup.Ambiguous(cursor.count)
 
@@ -546,7 +554,7 @@ class DocumentationContentSource internal constructor(
 		path: String,
 		pagePath: String,
 	): DocumentationLookup? {
-		database.rawQuery(CONTENT_QUERY, arrayOf(pagePath)).use { cursor ->
+		database.rawQuery(contentQuery(database), arrayOf(pagePath)).use { cursor ->
 			if (cursor.count > 1) return DocumentationLookup.Ambiguous(cursor.count)
 			if (!cursor.moveToFirst()) return null
 			val templateId = cursor.getInt(3)
@@ -636,6 +644,27 @@ class DocumentationContentSource internal constructor(
 	 */
 	private fun templatesCompressed(database: SQLiteDatabase): Boolean =
 		templatesCompressed ?: expectsCompressedTemplates(database).also { templatesCompressed = it }
+
+	/** The content query for [database]: a database without the templateId column reads with the legacy shape. */
+	private fun contentQuery(database: SQLiteDatabase): String =
+		if (contentHasTemplateId(database)) CONTENT_QUERY else CONTENT_QUERY_LEGACY
+
+	/**
+	 * Whether [database]'s Content table carries a templateId column, asked once per database.
+	 * A failure to inspect the schema is not cached, so the next lookup asks again.
+	 */
+	private fun contentHasTemplateId(database: SQLiteDatabase): Boolean =
+		contentHasTemplateId ?: detectTemplateIdColumn(database).also { contentHasTemplateId = it }
+
+	private fun detectTemplateIdColumn(database: SQLiteDatabase): Boolean =
+		database.rawQuery("PRAGMA table_info(Content)", null).use { cursor ->
+			while (cursor.moveToNext()) {
+				if (cursor.getString(1) == "templateId") {
+					return true
+				}
+			}
+			false
+		}
 
 	/**
 	 * Resolves a template id to the name the engine loads it by.
@@ -861,6 +890,7 @@ class DocumentationContentSource internal constructor(
 		// The new database may store its templates the other way, and against its own dictionary:
 		// the compiled templates go with the cache clear below.
 		templatesCompressed = null
+		contentHasTemplateId = null
 		clearTemplateCache()
 		generation++
 
@@ -892,6 +922,16 @@ class DocumentationContentSource internal constructor(
 
 		private const val CONTENT_QUERY = """
 			SELECT C.content, CT.value, CT.compression, C.templateId
+			FROM   Content C, ContentTypes CT
+			WHERE  C.contentTypeID = CT.id
+			AND    C.path = ?
+		"""
+
+		// The earlier schema's shape of [CONTENT_QUERY]: no templateId column exists there, so a
+		// literal 0 stands in for it -- every row reads as untemplated -- and the column indices
+		// the readers index by stay the same.
+		private const val CONTENT_QUERY_LEGACY = """
+			SELECT C.content, CT.value, CT.compression, 0
 			FROM   Content C, ContentTypes CT
 			WHERE  C.contentTypeID = CT.id
 			AND    C.path = ?

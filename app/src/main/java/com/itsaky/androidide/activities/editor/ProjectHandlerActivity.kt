@@ -1662,7 +1662,7 @@ abstract class ProjectHandlerActivity :
 		}
 	}
 
-	private fun createProjectInitParams(
+	private suspend fun createProjectInitParams(
 		projectDir: File,
 		buildVariants: Map<String, String>,
 		needsGradleSync: Boolean,
@@ -1670,7 +1670,7 @@ abstract class ProjectHandlerActivity :
 	): InitializeProjectParams =
 		InitializeProjectParams(
 			directory = projectDir.absolutePath,
-			gradleDistribution = gradleDistributionParams,
+			gradleDistribution = gradleDistributionParams(projectDir),
 			androidParams = createAndroidParams(buildVariants),
 			needsGradleSync = needsGradleSync,
 			buildId = buildId,
