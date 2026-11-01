@@ -79,12 +79,12 @@
       tentang hal tersebut melalui email, GitHub, atau forum komunitas Termux resmi **kemungkinan akan otomatis ditutup/dihapus** dan
       bahkan dapat mengakibatkan **pemblokiran sementara atau permanen**. Lihat %1$s/wiki/Hacking untuk detailnya.</string>
 
-  <string name="msg_termux_app_required_by_app">Aplikasi Code on the Go diperlukan oleh aplikasi %1$s untuk menjalankan perintah termux.</string>
-  <string name="error_termux_app_package_context_not_accessible">Aplikasi Code on the Go (konteks paket) tidak dapat diakses.</string>
-  <string name="error_termux_prefix_dir_path_not_accessible">Direktori $PREFIX aplikasi Code on the Go tidak dapat diakses oleh aplikasi %1$s.
-      Hal ini mungkin karena Anda belum menginstal atau menyiapkan aplikasi Code on the Go, atau
-      aplikasi Code on the Go dan aplikasi %1$s memiliki tanda tangan APK yang berbeda karena keduanya diinstal dari sumber yang berbeda.
-      Hal ini juga bisa terjadi karena direktori $PREFIX Code on the Go \"/data/data/com.itsaky.androidide/files/usr\" tidak ada atau tidak
+  <string name="msg_termux_app_required_by_app">Aplikasi DevxyzIDE Go diperlukan oleh aplikasi %1$s untuk menjalankan perintah termux.</string>
+  <string name="error_termux_app_package_context_not_accessible">Aplikasi DevxyzIDE Go (konteks paket) tidak dapat diakses.</string>
+  <string name="error_termux_prefix_dir_path_not_accessible">Direktori $PREFIX aplikasi DevxyzIDE Go tidak dapat diakses oleh aplikasi %1$s.
+      Hal ini mungkin karena Anda belum menginstal atau menyiapkan aplikasi DevxyzIDE Go, atau
+      aplikasi DevxyzIDE Go dan aplikasi %1$s memiliki tanda tangan APK yang berbeda karena keduanya diinstal dari sumber yang berbeda.
+      Hal ini juga bisa terjadi karena direktori $PREFIX DevxyzIDE Go \"/data/data/com.itsaky.androidide/files/usr\" tidak ada atau tidak
       memiliki izin baca, tulis, dan eksekusi.</string>
 
 

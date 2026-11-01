@@ -12,9 +12,13 @@ import com.itsaky.androidide.utils.TerminalInstaller
 import com.itsaky.androidide.utils.retryOnceOnNoSuchFile
 import com.itsaky.androidide.utils.throwIfNotSuccess
 import com.itsaky.androidide.utils.withTempZipChannel
+import com.termux.shared.termux.TermuxConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.adfa.constants.ANDROID_SDK_ZIP
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream
+import org.apache.commons.compress.archivers.zip.ZipFile
 import org.adfa.constants.DOCUMENTATION_DB
 import org.adfa.constants.GRADLE_API_NAME_JAR
 import org.adfa.constants.GRADLE_API_NAME_JAR_BR
@@ -25,6 +29,7 @@ import org.adfa.constants.PLUGIN_MAVEN_REPO_ZIP_BR
 import org.adfa.constants.TEMPLATE_CORE_ARCHIVE
 import org.adfa.constants.TEMPLATE_CORE_ARCHIVE_BR
 import org.slf4j.LoggerFactory
+import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
@@ -34,6 +39,7 @@ import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
+import java.util.zip.ZipEntry
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
 
@@ -190,6 +196,157 @@ data object DownloadAssetsInstaller : BaseAssetsInstaller() {
 		}
 	}
 
+	/**
+	 * The upstream bootstrap archives are built for upstream's own applicationId, so they
+	 * embed `/data/data/com.itsaky.androidide` (and the bare package name) in scripts,
+	 * symlink targets and binaries -- including the second-stage installer's shebang
+	 * (`#!/data/data/com.itsaky.androidide/files/usr/bin/bash`), whose interpreter does
+	 * not exist under this app's sandbox, which made the second stage fail with a
+	 * message-less error. Rewrite those references to this app's own prefix in the
+	 * decompressed bootstrap zip before [TerminalInstaller] consumes it: plain
+	 * replacement in text entries, NUL-padded (length-preserving) replacement in
+	 * binary entries so embedded C strings stay valid and no offsets shift.
+	 */
+	private fun patchBootstrapPrefix(zipPath: Path) {
+		val ownPackage = TermuxConstants.TERMUX_PACKAGE_NAME
+		val upstreamPath = "/data/data/com.itsaky.androidide"
+		val ownPath = "/data/data/$ownPackage"
+		if (upstreamPath == ownPath) {
+			return
+		}
+
+		val pathNeedle = upstreamPath.toByteArray(Charsets.UTF_8)
+		val pathReplacement = ownPath.toByteArray(Charsets.UTF_8)
+		val pkgNeedle = "com.itsaky.androidide".toByteArray(Charsets.UTF_8)
+		val pkgReplacement = ownPackage.toByteArray(Charsets.UTF_8)
+
+		val zipFile = zipPath.toFile()
+		val patchedFile = File(zipFile.parentFile, zipFile.name + ".patched")
+		ZipFile.builder()
+			.setSeekableByteChannel(Files.newByteChannel(zipPath))
+			.get().use { zip ->
+				BufferedOutputStream(patchedFile.outputStream()).use { bufferedOut ->
+					ZipArchiveOutputStream(bufferedOut).use { out ->
+						for (entry in zip.entries) {
+							val newEntry = ZipArchiveEntry(entry.name)
+							newEntry.method = ZipEntry.DEFLATED
+							newEntry.unixMode = entry.unixMode
+							newEntry.time = entry.time
+							out.putArchiveEntry(newEntry)
+							if (!entry.isDirectory) {
+								zip.getInputStream(entry).use { input ->
+									copyReplacingPrefix(
+										input = input,
+										out = out,
+										pathNeedle = pathNeedle,
+										pathReplacement = pathReplacement,
+										pkgNeedle = pkgNeedle,
+										pkgReplacement = pkgReplacement,
+									)
+								}
+							}
+							out.closeArchiveEntry()
+						}
+					}
+				}
+			}
+		Files.delete(zipPath)
+		Files.move(patchedFile.toPath(), zipPath)
+		logger.info("Rewrote bootstrap prefix {} -> {}", upstreamPath, ownPath)
+	}
+
+	/**
+	 * Streams [input] to [out], replacing every occurrence of [pathNeedle] and
+	 * [pkgNeedle] (longest match first). The entry is classified as binary when its
+	 * first chunk contains a NUL byte; binary replacements are padded with NULs to
+	 * the needle's length, text replacements are exact.
+	 */
+	private fun copyReplacingPrefix(
+		input: InputStream,
+		out: ZipArchiveOutputStream,
+		pathNeedle: ByteArray,
+		pathReplacement: ByteArray,
+		pkgNeedle: ByteArray,
+		pkgReplacement: ByteArray,
+	) {
+		val maxNeedle = pathNeedle.size
+		val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+		var pending = ByteArray(0)
+		var binary: Boolean? = null
+
+		fun replacementFor(needleSize: Int, replacement: ByteArray): ByteArray =
+			if (binary == true && replacement.size < needleSize) {
+				replacement + ByteArray(needleSize - replacement.size)
+			} else {
+				replacement
+			}
+
+		// Emits the transformable part of `pending`; keeps a tail of up to
+		// maxNeedle-1 bytes unprocessed unless `flushAll` (a match could span chunks).
+		fun drain(flushAll: Boolean) {
+			var segmentStart = 0
+			var i = 0
+			val limit = if (flushAll) pending.size else pending.size - (maxNeedle - 1)
+			while (i < limit) {
+				val matched =
+					when {
+						matchesAt(pending, i, pathNeedle) -> pathNeedle.size to pathReplacement
+						matchesAt(pending, i, pkgNeedle) -> pkgNeedle.size to pkgReplacement
+						else -> null
+					}
+				if (matched != null) {
+					if (i > segmentStart) {
+						out.write(pending, segmentStart, i - segmentStart)
+					}
+					out.write(replacementFor(matched.first, matched.second))
+					i += matched.first
+					segmentStart = i
+				} else {
+					i++
+				}
+			}
+			val emitEnd = maxOf(segmentStart, limit.coerceAtLeast(segmentStart))
+			if (emitEnd > segmentStart) {
+				out.write(pending, segmentStart, emitEnd - segmentStart)
+			}
+			pending =
+				if (emitEnd < pending.size) {
+					pending.copyOfRange(emitEnd, pending.size)
+				} else {
+					ByteArray(0)
+				}
+		}
+
+		while (true) {
+			val read = input.read(buffer)
+			if (read == -1) {
+				break
+			}
+			if (binary == null) {
+				binary = buffer.copyOf(read).contains(0.toByte())
+			}
+			pending += buffer.copyOf(read)
+			drain(flushAll = false)
+		}
+		drain(flushAll = true)
+	}
+
+	private fun matchesAt(
+		data: ByteArray,
+		offset: Int,
+		needle: ByteArray,
+	): Boolean {
+		if (offset + needle.size > data.size) {
+			return false
+		}
+		for (j in needle.indices) {
+			if (data[offset + j] != needle[j]) {
+				return false
+			}
+		}
+		return true
+	}
+
 	@OptIn(ExperimentalPathApi::class)
 	@WorkerThread
 	override suspend fun doInstall(
@@ -274,7 +431,10 @@ data object DownloadAssetsInstaller : BaseAssetsInstaller() {
 							withTempZipChannel(
 								stagingDir = stagingDir,
 								prefix = "bootstrap",
-								writeTo = { path -> writeDownloadedBrotliToPath(context, assetPath, path) },
+								writeTo = { path ->
+									writeDownloadedBrotliToPath(context, assetPath, path)
+									patchBootstrapPrefix(path)
+								},
 								useChannel = { ch -> TerminalInstaller.installIfNeeded(context, ch) },
 							)
 						}

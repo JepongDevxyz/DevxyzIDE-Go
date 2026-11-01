@@ -21,11 +21,11 @@
   <!-- Termux Bootstrap Packages Installation -->
   <string name="bootstrap_installer_body">Menginstal paket bootstrap…</string>
   <string name="bootstrap_error_title">Tidak dapat menginstal bootstrap</string>
-  <string name="bootstrap_error_body">Code on the Go tidak dapat menginstal paket bootstrap.</string>
+  <string name="bootstrap_error_body">DevxyzIDE Go tidak dapat menginstal paket bootstrap.</string>
   <string name="bootstrap_error_abort">Batalkan</string>
   <string name="bootstrap_error_try_again">Coba lagi</string>
-  <string name="bootstrap_error_not_primary_user_message">Code on the Go hanya dapat dijalankan sebagai pengguna utama.\nBiner bootstrap yang dikompilasi untuk Code on the Go memiliki jalur $PREFIX yang sudah ditetapkan secara permanen dan tidak dapat diinstal di jalur selain:\n%1$s.</string>
-  <string name="bootstrap_error_installed_on_portable_sd">Code on the Go tidak dapat diinstal di kartu SD portabel/eksternal/yang dapat dilepas pada perangkat Anda.\nBiner bootstrap yang dikompilasi untuk Code on the Go memiliki jalur $PREFIX yang sudah ditetapkan secara permanen dan tidak dapat diinstal di jalur selain:\n%1$s.</string>
+  <string name="bootstrap_error_not_primary_user_message">DevxyzIDE Go hanya dapat dijalankan sebagai pengguna utama.\nBiner bootstrap yang dikompilasi untuk DevxyzIDE Go memiliki jalur $PREFIX yang sudah ditetapkan secara permanen dan tidak dapat diinstal di jalur selain:\n%1$s.</string>
+  <string name="bootstrap_error_installed_on_portable_sd">DevxyzIDE Go tidak dapat diinstal di kartu SD portabel/eksternal/yang dapat dilepas pada perangkat Anda.\nBiner bootstrap yang dikompilasi untuk DevxyzIDE Go memiliki jalur $PREFIX yang sudah ditetapkan secara permanen dan tidak dapat diinstal di jalur selain:\n%1$s.</string>
 
   <!-- Terminal Sidebar and Shortcuts -->
   <string name="action_new_session">Sesi baru</string>
@@ -84,7 +84,7 @@
 
 
   <!-- TermuxService -->
-  <string name="error_display_over_other_apps_permission_not_granted_to_start_terminal">Code on the Go memerlukan izin \"Tampilkan di atas aplikasi lain\" untuk memulai sesi terminal dari latar belakang pada Android >= 10. Berikan izin melalui Pengaturan -> Aplikasi -> Code on the Go -> Lanjutan</string>
+  <string name="error_display_over_other_apps_permission_not_granted_to_start_terminal">DevxyzIDE Go memerlukan izin \"Tampilkan di atas aplikasi lain\" untuk memulai sesi terminal dari latar belakang pada Android >= 10. Berikan izin melalui Pengaturan -> Aplikasi -> DevxyzIDE Go -> Lanjutan</string>
 
   <!-- Termux File Receiver -->
   <string name="title_file_received">Simpan file di ~/downloads/</string>

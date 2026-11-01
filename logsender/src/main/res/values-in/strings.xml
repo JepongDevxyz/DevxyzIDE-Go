@@ -16,9 +16,9 @@
   -->
 
 <resources>
-  <string name="msg_bind_service_failed">Gagal terhubung ke Code On The Go</string>
+  <string name="msg_bind_service_failed">Gagal terhubung ke DevxyzIDE Go</string>
   <string name="notification_action_exit">Keluar</string>
   <string name="notification_title">Layanan LogSender</string>
-  <string name="notification_text">Terhubung ke Code On The Go</string>
+  <string name="notification_text">Terhubung ke DevxyzIDE Go</string>
   <string name="notification_channel_name">Layanan LogSender</string>
 </resources>
